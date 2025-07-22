@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "dotenv": "^17.2.0",
+    "mongoose": "^8.16.4",
+    "pg": "^8.16.3"
+  },
+  "name": "cinesync",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
