@@ -1,10 +1,12 @@
 import express from 'express';
-import { addToWatchlist, removeFromWatchlist } from '../controllers/watchlist.controller.js';
-import verifyToken from '../middleware/auth.middleware.js';
+import { addToWatchlist, getWatchlist, removeFromWatchlist } from '../controllers/watchlist.controller.js';
+import authMiddleware from '../middleware/auth.Middleware.js';
 
 const router = express.Router();
+router.use(authMiddleware);
 
-router.post('/add', verifyToken, addToWatchlist);
-router.delete('/remove/:movieId', verifyToken, removeFromWatchlist);
+router.post('/', addToWatchlist);
+router.get('/', getWatchlist);
+router.delete('/:movieId', removeFromWatchlist);
 
 export default router;
