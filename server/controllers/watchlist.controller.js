@@ -1,19 +1,20 @@
-import User from '../models/user.model.js';
+import Watchlist from '../models/watchlist.model.js';
 
 export const addToWatchlist = async (req, res) => {
   const { movieId, title, poster } = req.body;
 
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ msg: "User not found" });
+    const alreadyExists = await Watchlist.findOne({ userId: req.user.id, movieId });
+    if (alreadyExists) return res.status(409).json({ msg: "Already in watchlist" });
 
-    const exists = user.watchlist.find(item => item.movieId === movieId);
-    if (exists) return res.status(409).json({ msg: "Already in watchlist" });
+    const item = await Watchlist.create({
+      userId: req.user.id,
+      movieId,
+      title,
+      poster
+    });
 
-    user.watchlist.push({ movieId, title, poster });
-    await user.save();
-
-    res.status(201).json(user.watchlist);
+    res.status(201).json(item);
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }
@@ -21,29 +22,22 @@ export const addToWatchlist = async (req, res) => {
 
 export const getWatchlist = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ msg: "User not found" });
-
-    res.json(user.watchlist);
+    const items = await Watchlist.find({ userId: req.user.id });
+    res.json(items);
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }
 };
 
 export const removeFromWatchlist = async (req, res) => {
-  const { movieId } = req.params;
-
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ msg: "User not found" });
+    const removed = await Watchlist.findOneAndDelete({
+      userId: req.user.id,
+      movieId: req.params.movieId
+    });
 
-    const prevLength = user.watchlist.length;
-    user.watchlist = user.watchlist.filter(item => item.movieId !== movieId);
+    if (!removed) return res.status(404).json({ msg: "Not found" });
 
-    if (user.watchlist.length === prevLength)
-      return res.status(404).json({ msg: "Movie not found in watchlist" });
-
-    await user.save();
     res.json({ msg: "Removed from watchlist" });
   } catch (err) {
     res.status(500).json({ msg: err.message });
