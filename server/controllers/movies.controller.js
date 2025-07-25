@@ -29,4 +29,34 @@ const getMovieById = asyncHandler(async (req, res) => {
       .json(new ApiError("Failed to fetch movie", 500, err.message));
   }
 });
-export { getAllMovies, getMovieById };
+
+const getMovieByTitle = asyncHandler(async (req, res) => {
+  const { title } = req.body;
+
+  if (!title) {
+    res
+      .status(400)
+      .json(new ApiError(400, "Send a name to search for", err.message));
+  }
+
+  const movie = await Movie.findBy({ title: title });
+
+  if (!movie) {
+    res
+      .status(404)
+      .json(new ApiError("No movie found with such title", 404, err.message));
+  }
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse("Movie fetched with the given title", 200, { movie })
+    );
+});
+
+const movieReviews = asyncHandler(
+  async(req, (res) => {
+    //what to do
+  })
+);
+export { getAllMovies, getMovieById, getMovieByTitle, movieReviews };
