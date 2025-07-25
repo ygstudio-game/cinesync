@@ -1,15 +1,15 @@
-const mongoose = require("mongoose");
+import { Schema, model } from "mongoose";
 
-const movieSchema = new mongoose.Schema(
+const movieSchema = new Schema(
   {
     title: { type: String, required: true },
     description: String,
     releaseYear: Number,
     genre: [String],
     posterUrl: String,
-    reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: "Review" }],
+    reviews: [{ type: Schema.Types.ObjectId, ref: "Review" }],
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Movie", movieSchema);
+export default model("Movie", movieSchema);

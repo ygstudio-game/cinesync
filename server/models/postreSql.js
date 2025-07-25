@@ -1,4 +1,4 @@
-const { Pool } = require("pg");
+import { Pool } from "pg";
 require("dotenv").config();
 
 const pool = new Pool({
@@ -17,4 +17,4 @@ pool.query("SELECT NOW()", (err, res) => {
   }
 });
 
-module.exports = pool;
+export default pool;
