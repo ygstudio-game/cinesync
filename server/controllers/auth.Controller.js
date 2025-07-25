@@ -60,3 +60,31 @@ export const loginUser = asyncHandler(async (req, res) => {
     res.status(500).json(new ApiError("Login failed", 500, err.message));
   }
 });
+
+const logoutUser = asyncHandler(async (req, res) => {
+  try {
+    // Invalidate the token by removing it from the client side
+    res.status(200).json(ApiResponse("Logout successful", 200));
+  } catch (err) {
+    res.status(500).json(ApiError("Logout failed", 500, err.message));
+  }
+});
+export const getCurrentUser = asyncHandler(async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user)
+      return res
+        .status(404)
+        .json(ApiError("User not found", 404, "No user with this ID"));
+
+    res.json(ApiResponse("User retrieved successfully", 200, { user }));
+  } catch (err) {
+    res.status(500).json(ApiError("Failed to retrieve user", 500, err.message));
+  }
+});
+export default {
+  registerUser,
+  loginUser,
+  logoutUser,
+  getCurrentUser,
+};
