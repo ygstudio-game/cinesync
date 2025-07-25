@@ -1,20 +1,22 @@
 import app from "./app.js";
-import { connectDB } from "./db/index.js";
-
-const PORT = process.env.PORT || 5000;
+import  connectDB  from "./db/index.js";
+import dotenv from "dotenv";
+ 
 
 // Load environment variables from the .env file
 // Ensure this is done before using any environment variables
-dotenv.config({
-  path: "./env",
-});
+dotenv.config();
 
-connectDB()
+const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI;
+const DB_NAME = process.env.DB_NAME;
+
+connectDB(MONGO_URI,DB_NAME)
   .then(() => {
     console.log("Database connected successfully!");
 
     app.listen(process.env.PORT || 5000, () => {
-      console.log(`Server is running on port ${process.env.PORT}`);
+      console.log(`Server is running on port ${PORT}`);
     });
     app.get("/", (req, res) => {
       res.send("Welcome to the API");
