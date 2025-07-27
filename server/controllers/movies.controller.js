@@ -186,3 +186,97 @@ export const getCertifications = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Certifications not found", error.message);
   }
 });
+
+export const getTitleVideos = asyncHandler(async (req, res) => {
+  const { titleId } = req.params;
+  const ALLOWED_VIDEO_TYPES = [
+  "TRAILER", "CLIP", "FEATURETTE", "PROMOTIONAL", "INTERVIEW", "VIDEO_TYPE_OTHER"
+];
+const MAX_PAGE_SIZE = 50;
+const DEFAULT_PAGE_SIZE = 20;
+
+  let { type, pageSize = DEFAULT_PAGE_SIZE, pageToken } = req.query;
+  
+  // Validate titleId format
+  if (!/^tt\d{7,}$/.test(titleId)) {
+    throw new ApiError(400, "Invalid titleId format. Must be tt followed by digits");
+  }
+  
+  // Validate and parse pageSize
+  pageSize = parseInt(pageSize);
+  if (isNaN(pageSize) || pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
+    throw new ApiError(400, `pageSize must be between 1 and ${MAX_PAGE_SIZE}`);
+  }
+  
+  // Validate type if provided
+  if (type && !ALLOWED_VIDEO_TYPES.includes(type.toUpperCase())) {
+    throw new ApiError(400, `Invalid video type. Valid types: ${ALLOWED_VIDEO_TYPES.join(", ")}`);
+  }
+  
+  try {
+    // Fetch videos from IMDb API
+    const response = await axios.get(`${IMDB_API_BASE}/titles/${titleId}/videos`, {
+      headers: { Accept: "application/json" }
+    });
+    
+    // Validate response structure
+    if (!response.data?.videos || !Array.isArray(response.data.videos)) {
+      throw new ApiError(502, "Invalid videos data structure from IMDb API");
+    }
+
+    let videos = response.data.videos;
+    const totalItems = videos.length;
+
+    // Apply type filtering if specified
+    if (type) {
+      videos = videos.filter(
+        video => video.type === type.toUpperCase()
+      );
+    }
+
+    // Parse and validate pageToken
+    let startIndex = 0;
+    if (pageToken) {
+      startIndex = parseInt(pageToken);
+      if (isNaN(startIndex) || startIndex < 0 || startIndex >= totalItems) {
+        throw new ApiError(400, "Invalid pageToken");
+      }
+    }
+
+    // Apply pagination
+    const endIndex = Math.min(startIndex + pageSize, videos.length);
+    const paginatedVideos = videos.slice(startIndex, endIndex);
+    
+    // Prepare next page token
+    const nextPageToken = endIndex < videos.length ? String(endIndex) : null;
+
+    res.status(200).json(
+      new ApiResponse("Videos retrieved", 200, {
+        videos: paginatedVideos,
+        totalCount: videos.length,
+        nextPageToken
+      })
+    );
+    
+  } catch (error) {
+    // Handle specific IMDb API errors
+    if (error.response) {
+      const apiError = error.response.data?.error || error.message;
+      throw new ApiError(
+        error.response.status,
+        `IMDb API error: ${apiError}`,
+        { endpoint: `${IMDB_API_BASE}/titles/${titleId}/videos` }
+      );
+    }
+    
+    // Re-throw our custom ApiErrors
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    
+    // Handle other errors
+    throw new ApiError(500, "Failed to retrieve videos", {
+      internalError: error.message
+    });
+  }
+});

@@ -4,7 +4,8 @@ import {
   getTitleDetails,
   batchGetTitles,
   getTitleEpisodes,
-  getCertifications
+  getCertifications,
+  getTitleVideos
 } from "../controllers/movies.controller.js";
 import authMiddleware from "../middleware/auth.Middleware.js";
 
@@ -15,7 +16,7 @@ router.get("/search", searchTitles);
 router.get("/:titleId", getTitleDetails);
 router.get("/:titleId/episodes", getTitleEpisodes);
 router.get("/:titleId/certificates", getCertifications);
-
+router.get("/:titleId/videos", getTitleVideos);
 router.post("/batch", batchGetTitles);
 
 export default router;
