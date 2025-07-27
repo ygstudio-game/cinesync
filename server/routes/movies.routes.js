@@ -1,14 +1,22 @@
-import { Router } from "express";
+import express from "express";
 import {
-  getAllMovies,
-  getMovieById,
-  getMovieByTitle,
-  movieReviews,
+  searchTitles,
+  getTitleDetails,
+  batchGetTitles,
+  getTitleEpisodes,
+  getCertifications
 } from "../controllers/movies.controller.js";
+import authMiddleware from "../middleware/auth.Middleware.js";
 
-const router = Router();
+const router = express.Router();
 
-router.route("/popular").get(getAllMovies);
-router.route("/search").get(getMovieByTitle);
-router.route("/:id").get(getMovieById);
-router.route("/rate/:id").post(movieReviews);
+// Public endpoints (no auth required)
+router.get("/search", searchTitles);
+router.get("/:titleId", getTitleDetails);
+router.get("/:titleId/episodes", getTitleEpisodes);
+router.get("/:titleId/certificates", getCertifications);
+
+// Requires authentication
+router.post("/batch", batchGetTitles);
+
+export default router;
