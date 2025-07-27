@@ -37,22 +37,85 @@ export const searchTitles = asyncHandler(async (req, res) => {
   }
 });
 
-// Batch title lookup
 export const batchGetTitles = asyncHandler(async (req, res) => {
   const { ids } = req.body;
+  console.log(ids);
   
-  if (!ids || !Array.isArray(ids) || ids.length === 0 || ids.length > 50) {
-    throw new ApiError(400, "Invalid IDs array (max 50 items)");
+  
+  // Validate input
+  if (!ids || !Array.isArray(ids) || ids.length === 0 || ids.length > 100) {
+    throw new ApiError(400, "Must provide 1-100 IMDb IDs in an array");
+  }
+
+  // Validate IMDb ID format
+  const isValidImdbId = (id) => /^tt\d{7,}$/.test(id);
+  const validIds = ids.filter(id => isValidImdbId(id));
+  
+  if (validIds.length === 0) {
+    throw new ApiError(400, "Invalid IMDb ID format in provided array");
   }
 
   try {
-    const response = await axios.post(`${IMDB_API_BASE}/titles:batchGet`, { ids });
-    
+    // Create custom params with multiple titleIds parameters
+    const params = {
+      ...(validIds.reduce((acc, id, index) => {
+        acc[`titleIds[${index}]`] = id;
+        return acc;
+      }, {}))
+    };
+
+const response = await axios.get(`${IMDB_API_BASE}/titles:batchGet`, {
+  params: {
+    titleIds: validIds
+  },
+  paramsSerializer: (params) => {
+    // Custom serializer that flattens titleIds correctly
+    return Object.entries(params)
+      .map(([key, value]) =>
+        Array.isArray(value)
+          ? value.map(v => `${key}=${encodeURIComponent(v)}`).join("&")
+          : `${key}=${encodeURIComponent(value)}`
+      )
+      .join("&");
+  }
+});
+
+    // Validate response has the expected structure
+    if (!Array.isArray(response.data?.titles)) {
+      throw new ApiError(502, "Invalid batch response structure from IMDb API");
+    }
+
+    // Find which requested IDs are missing from the response
+    const returnedIds = new Set(response.data.titles.map(title => title.id));
+    const missingIds = validIds.filter(id => !returnedIds.has(id));
+
     res.status(200).json(
-      new ApiResponse("Batch titles retrieved", 200, response.data.titles)
+      new ApiResponse("Batch titles retrieved", 200, {
+        requestedCount: validIds.length,
+        returnedCount: response.data.titles.length,
+        missingIds,
+        titles: response.data.titles
+      })
     );
   } catch (error) {
-    throw new ApiError(500, "Batch lookup failed", error.message);
+    let status = 500;
+    let message = "Batch lookup failed";
+    let details = {
+      validIds,
+      apiEndpoint: `${IMDB_API_BASE}/titles:batchGet`
+    };
+
+    if (error.response) {
+      status = error.response.status;
+      message = `IMDb API error: ${error.response.statusText}`;
+      details.apiError = error.response.data?.error || error.response.data;
+    } else if (error.request) {
+      message = "No response received from IMDb API";
+    } else {
+      message = `Request setup error: ${error.message}`;
+    }
+
+    throw new ApiError(status, message, details);
   }
 });
 

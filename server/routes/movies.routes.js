@@ -16,7 +16,6 @@ router.get("/:titleId", getTitleDetails);
 router.get("/:titleId/episodes", getTitleEpisodes);
 router.get("/:titleId/certificates", getCertifications);
 
-// Requires authentication
 router.post("/batch", batchGetTitles);
 
 export default router;
